@@ -36,8 +36,8 @@ namespace SiriusFM
 		Diffusion1D const*  a_diff,
 		AProvider const*    a_rateA,
 		BProvider const*    a_rateB, 
-		AssetClassA         a_A,
-		AssetClassB         a_B,
+		AssetClassA         a_assetA,
+		AssetClassB         a_assetB,
     PathEvaluator*      a_pathEval
   )
 	{
@@ -46,8 +46,8 @@ namespace SiriusFM
 			   a_rateA != nullptr &&
 			   a_rateB != nullptr &&
 			   a_P > 0 &&
-			   a_A != AssetClassA::Undefined  &&
-			   a_B != AssetClassB::Undefined  &&
+			   a_assetA != AssetClassA::Undefined  &&
+			   a_assetB != AssetClassB::Undefined  &&
 			   a_t0 <= a_T   && a_tauMins > 0 &&
          a_pathEval != nullptr);
 
@@ -116,7 +116,8 @@ namespace SiriusFM
 
 				  if(IsRN) //Risk-neutral case
 				  {
-					  double delta_r = a_rateB->r(a_B, y) - a_rateA->r(a_A, y);
+					  double delta_r = a_rateB->r(a_assetB, y) -
+                             a_rateA->r(a_assetA, y);
 					
 					  mu0 = delta_r * Sp0;
 					  mu1 = delta_r * Sp1;

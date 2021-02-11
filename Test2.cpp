@@ -1,7 +1,6 @@
 #include "DiffusionGBM.h"
 #include "IRProviderConst.h"
 #include "MCEngine1D.hpp"
-#include "Option.h"
 #include "VanillaOptions.h"
 
 namespace SiriusFM
@@ -10,7 +9,7 @@ namespace SiriusFM
   class OPPathEval
   {
   private:
-    Option const* const m_option;
+    OptionFX const* const m_option;
     long   m_P;     // Total paths evaluated
     double m_sum;   // Sum of Payoffs
     double m_sum2;  // Sum of Payoff^2
@@ -18,7 +17,7 @@ namespace SiriusFM
     double m_maxPO; // Max PayOff
 
   public:
-    OPPathEval(Option const* a_option)
+    OPPathEval(OptionFX const* a_option)
     : m_option(a_option),
       m_P     (0),
       m_sum   (0),
@@ -93,11 +92,11 @@ int main(int argc, char** argv)
              CcyE, CcyE, OPPathEval>
     mce(20000, 20000);
 
-	Option const* opt = (strcmp(OptType, "Call") == 0)
-						? static_cast<Option*>(new EurCallOption(K, T_days))
+	OptionFX const* opt = (strcmp(OptType, "Call") == 0)
+						? static_cast<OptionFX*>(new EurCallOptionFX(ccyA, ccyB, K, T_days))
 						: 
 						(strcmp(OptType, "Put") == 0)
-						? static_cast<Option*> (new EurPutOption(K, T_days))
+						? static_cast<OptionFX*> (new EurPutOptionFX(ccyA, ccyB, K, T_days))
 						:throw invalid_argument("Bad option type");
 
 	time_t t0 = time(nullptr);

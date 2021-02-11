@@ -48,15 +48,17 @@ int main(int argc, char** argv)
 	time_t t0 = time(nullptr);   // Pricing Time
 	time_t T  = t0 + SEC_IN_DAY * T_days;
 
-	Option const* opt = (strcmp(OptType, "Call") == 0)
-						? static_cast<Option*>(new EurCallOption(K, T))
-						: 
-						(strcmp(OptType, "Put") == 0)
-						? static_cast<Option*> (new EurPutOption(K, T))
-						: throw invalid_argument("Bad option type");
+	OptionFX const* opt = nullptr;
+  if (strcmp(OptType, "Call") == 0)
+		opt = new EurCallOptionFX(ccyA, ccyB, K, T);
+  else
+	if (strcmp(OptType, "Put") == 0)
+	  opt = new EurPutOptionFX (ccyA, ccyB, K, T);
+  else
+		throw invalid_argument("Bad option type");
 
   // Presto! Run the Pricer:
-  double px = pricer.Px(opt, ccyA, ccyB, t0, tau_mins, P);
+  double px = pricer.Px(opt, t0, tau_mins, P);
 
   cout << "Px=" << px << endl;
   delete opt;

@@ -61,8 +61,8 @@ namespace SiriusFM
 		  Diffusion1D const*  a_diff,
 		  AProvider const*    a_rateA,
 		  BProvider const*    a_rateB, 
-		  AssetClassA         a_A,
-		  AssetClassB         a_B,
+		  AssetClassA         a_assetA,
+		  AssetClassB         a_assetB,
       PathEvaluator*      a_pathEval
     );
 	};

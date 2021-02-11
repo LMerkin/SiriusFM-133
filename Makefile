@@ -1,9 +1,9 @@
 #If some problems with Makefile are occured, consider running with
 #g++ -Wall -g -std=c++17 Test2.cpp IRProvider.cpp -o a && ./a [args]
 
-TARGET  = ../Test3
+TARGET  = ../Test2
 
-SOURCES = Test3 IRProviderConst 
+SOURCES = Test2 IRProviderConst 
 
 EXTLIBS =
 

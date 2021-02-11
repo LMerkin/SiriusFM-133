@@ -5,12 +5,23 @@
 
 namespace SiriusFM
 {
-	class EurCallOption final: public Option
+  //=========================================================================//
+  // Generic European Call:                                                  //
+  //=========================================================================//
+  template<typename AssetClassA,  typename AssetClassB>
+	class EurCallOption final: public Option<AssetClassA, AssetClassB>
 	{
 		double const m_K;
 	public:
-		EurCallOption(double a_K, time_t a_expirTime)
-    : Option(a_expirTime, false),    // IsAmerican=false
+		EurCallOption
+    (
+      AssetClassA a_assetA,
+      AssetClassB a_assetB,
+      double      a_K,
+      time_t      a_expirTime
+    )
+    : Option<AssetClassA, AssetClassB>(a_assetA, a_assetB, a_expirTime, false),
+                                                // IsAmerican=false
 	    m_K(a_K)
 		{
 			if(a_K <= 0)
@@ -28,13 +39,24 @@ namespace SiriusFM
 		}
 	};
 
-
-	class EurPutOption final: public Option
+  //=========================================================================//
+  // Generic European Put:                                                   //
+  //=========================================================================//
+  template<typename  AssetClassA,  typename AssetClassB>
+	class EurPutOption final: public Option<AssetClassA, AssetClassB>
 	{
 		double const m_K;
+
 	public:
-		EurPutOption(double a_K, time_t a_expirTime)
-    : Option(a_expirTime, false),    // IsAmerican=false
+		EurPutOption
+    (
+      AssetClassA a_assetA,
+      AssetClassB a_assetB,
+      double      a_K,
+      time_t      a_expirTime
+    )
+    : Option<AssetClassA, AssetClassB>(a_assetA, a_assetB, a_expirTime, false),
+                                                          // IsAmerican=false
 	    m_K(a_K)
 		{
 			if(a_K <= 0)
@@ -51,4 +73,10 @@ namespace SiriusFM
 			return std::max<double>(m_K - a_path[a_L - 1], 0);
 		}
 	};
+
+  //=========================================================================//
+  // Aliases:                                                                //
+  //=========================================================================//
+  using EurCallOptionFX = EurCallOption<CcyE, CcyE>;
+  using EurPutOptionFX  = EurPutOption <CcyE, CcyE>;
 }

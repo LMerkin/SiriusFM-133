@@ -17,9 +17,7 @@ namespace SiriusFM
   Px
   (
     // Instrument Spec:
-    Option const*       a_option,   // Payoff and Expiration Time
-    AssetClassA         a_A,        // A/B:   the underlying
-    AssetClassB         a_B,        //
+    Option<AssetClassA, AssetClassB> const* a_option,
     // Pricing Time:
     time_t              a_t0,
     // MC Params:
@@ -35,13 +33,14 @@ namespace SiriusFM
 	  // Run MC: Option pricing is Risk-Neutral:
 	  m_mce.template Simulate<true>
       (a_t0,   a_option->m_expirTime, a_tauMins, a_P, m_useTimerSeed,
-       m_diff, &m_irpA, &m_irpB, a_A, a_B, &pathEval);
+       m_diff, &m_irpA, &m_irpB,  a_option->m_assetA, a_option->m_assetB,
+       &pathEval);
 
     // Get the price from PathEval:
     double px = pathEval.GetPx();
 
     // Apply the Discount Factor on B:
-    px *= m_irpB.DF(a_B, a_t0, a_option->m_expirTime);
+    px *= m_irpB.DF(a_option->m_assetB, a_t0, a_option->m_expirTime);
     return px;
   }
 }

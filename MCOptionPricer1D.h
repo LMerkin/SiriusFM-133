@@ -21,7 +21,7 @@ namespace SiriusFM
     class OPPathEval
     {
     private:
-      Option const* const m_option;
+      Option<AssetClassA, AssetClassB> const* const m_option;
       long   m_P;     // Total paths evaluated
       double m_sum;   // Sum of Payoffs
       double m_sum2;  // Sum of Payoff^2
@@ -29,7 +29,7 @@ namespace SiriusFM
       double m_maxPO; // Max PayOff
 
     public:
-      OPPathEval(Option const* a_option)
+      OPPathEval(Option<AssetClassA, AssetClassB> const* a_option)
       : m_option(a_option),
         m_P     (0),
         m_sum   (0),
@@ -110,9 +110,7 @@ namespace SiriusFM
     double Px
     (
       // Instrument Spec:
-      Option const*       a_option,   // Payoff and Expiration Time
-      AssetClassA         a_A,        // A/B:   the underlying
-      AssetClassB         a_B,        //
+      Option<AssetClassA, AssetClassB> const* a_option,
       // Pricing Time:
       time_t              a_t0,
       // MC Params:
