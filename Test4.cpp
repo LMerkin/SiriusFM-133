@@ -6,6 +6,9 @@
 #include <cstring>
 #include <cmath>
 
+using namespace SiriusFM;
+using namespace std;
+
 namespace
 {
   // CDF of the Standard Normal:
@@ -13,51 +16,57 @@ namespace
     { return 0.5 * (1.0 + erf(x / M_SQRT2)); }
 
   // BSM Pricer (const params):
+  // TTE is Time-To-Expiration (as Year Fraction):
   //
-  inline double BSMPxCall(double a_S0,    double a_K,     double a_Ty,
+  inline double BSMPxCall(double a_S0,    double a_K,     double a_TTE,
                           double a_rateA, double a_rateB, double a_sigma)
   {
-    assert(a_S0 > 0 && a_K > 0 && a_Ty > 0 && a_sigma > 0);
-    double xd = a_sigma * sqrt(a_Ty);
+    assert(a_S0 > 0 && a_K > 0 && a_sigma > 0);
+    if (a_TTE <= 0)
+      // Return PayOff:
+      return std::max<double>(a_S0 - a_K, 0);
+
+    double xd = a_sigma * sqrt(a_TTE);
     double x1 =
       (log(a_S0 / a_K) +
-        (a_rateB - a_rateA + a_sigma * a_sigma / 2.0) * a_Ty) / xd;
+        (a_rateB - a_rateA + a_sigma * a_sigma / 2.0) * a_TTE) / xd;
     double x2 = x1 - xd;
-    return a_S0 * exp(-a_rateA * a_Ty) * Phi(x1) -
-           a_K  * exp(-a_rateB * a_Ty) * Phi(x2);
+    double px = a_S0 * exp(-a_rateA * a_TTE) * Phi(x1) -
+                a_K  * exp(-a_rateB * a_TTE) * Phi(x2);
+    return px;
   }
 
-  inline double BSMPxPut (double a_S0,    double a_K,     double a_Ty,
+  inline double BSMPxPut (double a_S0,    double a_K,     double a_TTE,
                           double a_rateA, double a_rateB, double a_sigma)
   {
     double px =
-      BSMPxCall(a_S0, a_K, a_Ty, a_rateA, a_rateB, a_sigma) - a_S0 +
-      exp(-a_rateB * a_Ty) * a_K;
+      BSMPxCall(a_S0, a_K, a_TTE, a_rateA, a_rateB, a_sigma) - a_S0 +
+      exp(-a_rateB * a_TTE) * a_K;
     assert(px > 0.0);
     return px;
   }
 
   // Deltas of Call and Put:
-  inline double BSMDeltaCall(double a_S0,    double a_K,     double a_Ty,
+  inline double BSMDeltaCall(double a_S0,    double a_K,     double a_TTE,
                              double a_rateA, double a_rateB, double a_sigma)
   {
-    assert(a_S0 > 0 && a_K > 0 && a_Ty > 0 && a_sigma > 0);
-    double xd = a_sigma * sqrt(a_Ty);
+    assert(a_S0 > 0 && a_K > 0 && a_sigma > 0);
+    if (a_TTE <= 0)
+      return (a_S0 < a_K) ? 0 : (a_S0 > a_K) ? 1 : 0.5;
+
+    double xd = a_sigma * sqrt(a_TTE);
     double x1 =
       (log(a_S0 / a_K) +
-        (a_rateB - a_rateA + a_sigma * a_sigma / 2.0) * a_Ty) / xd;
+        (a_rateB - a_rateA + a_sigma * a_sigma / 2.0) * a_TTE) / xd;
     return Phi(x1);
   }
 
-  inline double BSMDeltaPut (double a_S0,    double a_K,     double a_Ty,
+  inline double BSMDeltaPut (double a_S0,    double a_K,     double a_TTE,
                              double a_rateA, double a_rateB, double a_sigma)
   {
-    return BSMDeltaCall(a_S0, a_K, a_Ty, a_rateA, a_rateB, a_sigma) - 1.0;
+    return BSMDeltaCall(a_S0, a_K, a_TTE, a_rateA, a_rateB, a_sigma) - 1.0;
   }
 }
-
-using namespace SiriusFM;
-using namespace std;
 
 int main(int argc, char** argv)
 {
@@ -97,10 +106,11 @@ int main(int argc, char** argv)
     hedger(&diff, ratesFileA, ratesFileB, useTimerSeed);
 
   // Create the Option spec:
-	time_t t0 = time(nullptr);                // Abs Start Time
-	time_t T  = t0 + SEC_IN_DAY * T_days;     // Abs Expir Time
-  double Ty = double(T) / AVG_SEC_IN_YEAR;
-
+	time_t t0  = time(nullptr);            // Abs Start Time
+	time_t T   = t0 + SEC_IN_DAY * T_days; // Abs Expir Time in Sec from Epoch
+  double TTE = YearFracInt(T - t0);
+  double Ty  = EPOCH_BEGIN + double(T) / AVG_SEC_IN_YEAR;
+                                         // Expir Time as YYYY.YearFrac
 	OptionFX const* opt = nullptr;
   decltype(hedger)::DeltaFunc const* deltaFunc = nullptr;
   double          C0  = 0.0;
@@ -115,7 +125,8 @@ int main(int argc, char** argv)
       [K, Ty, rateA, rateB, sigma]
       (double a_St, double a_t) -> double
       {
-        return BSMDeltaCall(a_St, K, Ty - a_t, rateA, rateB, sigma);
+        double currTTE = Ty - a_t;
+        return BSMDeltaCall(a_St, K, currTTE, rateA, rateB, sigma);
       }
     );
   function<double(double,double)> deltaPut
@@ -123,21 +134,22 @@ int main(int argc, char** argv)
       [K, Ty, rateA, rateB, sigma]
       (double a_St, double a_t) -> double
       {
-        return BSMDeltaPut (a_St, K, Ty - a_t, rateA, rateB, sigma);
+        double currTTE = Ty - a_t;
+        return BSMDeltaPut (a_St, K, currTTE, rateA, rateB, sigma);
       }
     );
 
   if (strcmp(OptType, "Call") == 0)
   {
 		opt       = new EurCallOptionFX(ccyA, ccyB, K, T);
-    C0        = BSMPxCall(S0, K, Ty, rateA, rateB, sigma);
+    C0        = BSMPxCall(S0, K, TTE, rateA, rateB, sigma);
     deltaFunc = &deltaCall;
   }
   else
 	if (strcmp(OptType, "Put") == 0)
   {
 	  opt       = new EurPutOptionFX (ccyA, ccyB, K, T);
-    C0        = BSMPxPut(S0, K, Ty, rateA, rateB, sigma);
+    C0        = BSMPxPut(S0, K, TTE, rateA, rateB, sigma);
     deltaFunc = &deltaPut;
   }
   else

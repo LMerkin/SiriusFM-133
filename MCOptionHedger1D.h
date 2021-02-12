@@ -123,25 +123,27 @@ namespace SiriusFM
               M += Sp * tau * m_ratesA[l-1];
             }
 
-            // Delta Hedging:
-            //
-            double deltaN = (*m_DeltaFunc)(St, t);
-            // Round "deltaN" to a multiple of "DeltaAcc":
-            // Also,  deltaN changes sign (as we long the option)
-            deltaN = - round(deltaN / m_DeltaAcc) * m_DeltaAcc;
-
-            if (delta != deltaN)
+            // Delta Hedging (no need for it in the last point):
+            if (l < a_L - 1)
             {
-              // Re-Hedge:
-              M -= (deltaN - delta) * St;
-              delta = deltaN;
+              double deltaN = (*m_DeltaFunc)(St, t);
+              // Round "deltaN" to a multiple of "DeltaAcc":
+              // Also,  deltaN changes sign (as we long the option)
+              deltaN = - round(deltaN / m_DeltaAcc) * m_DeltaAcc;
+
+              if (delta != deltaN)
+              {
+                // Re-Hedge:
+                M -= (deltaN - delta) * St;
+                delta = deltaN;
+              }
             }
           }
           // End of Path. Get the PayOff and the total portfolio value:
           double PnL =
             M + delta * path[a_L-1] + m_option->Payoff(a_L, path, a_ts);
-std::cerr << "M=" << M << ", delta=" << delta    << ", payoff="
-          << (m_option->Payoff(a_L, path, a_ts)) << std::endl;
+// std::cerr << "M=" << M << ", delta=" << delta    << ", payoff="
+//        << (m_option->Payoff(a_L, path, a_ts)) << std::endl;
 
           // Update the stats:
           m_sumPnL  += PnL;

@@ -9,8 +9,8 @@ EXTLIBS =
 
 CXXFLAGS += -MP -MMD -fPIC
 CXXFLAGS += -std=c++17 -Wall
-#CXXFLAGS += -O3 -DNDEBUG -march=native -mtune=native
-CXXFLAGS += -O0 -g
+CXXFLAGS += -O3 -DNDEBUG -march=native -mtune=native
+#CXXFLAGS += -O0 -g
 
 #LDFLAGS += -v
 #LDFLAGS += -fPIC
