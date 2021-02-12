@@ -1,15 +1,16 @@
 #If some problems with Makefile are occured, consider running with
 #g++ -Wall -g -std=c++17 Test2.cpp IRProvider.cpp -o a && ./a [args]
 
-TARGET  = ../Test2
+TARGET  = ../Test4
 
-SOURCES = Test2 IRProviderConst 
+SOURCES = Test4 IRProviderConst 
 
 EXTLIBS =
 
 CXXFLAGS += -MP -MMD -fPIC
 CXXFLAGS += -std=c++17 -Wall
-CXXFLAGS += -O3 -DNDEBUG -march=native -mtune=native
+#CXXFLAGS += -O3 -DNDEBUG -march=native -mtune=native
+CXXFLAGS += -O0 -g
 
 #LDFLAGS += -v
 #LDFLAGS += -fPIC
