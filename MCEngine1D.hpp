@@ -66,7 +66,7 @@ namespace SiriusFM
 		double stau = sqrt(tau);
 		double tlast = (T_sec % tau_sec == 0)
 					   ? tau
-					   : YearFracInt(T_sec - (L - 1) * tau_sec);
+					   : YearFracInt(T_sec - (L_segm - 1) * tau_sec);
 		assert(tlast <= tau && tlast > 0);
 		double slast = sqrt(tlast);
 		assert(slast <= stau && slast > 0);
@@ -96,6 +96,8 @@ namespace SiriusFM
     for (long i = 0; i < PI; ++i)
     {
       // Generate in-memory paths:
+//    #pragma acc parallel loop
+      #pragma omp parallel for
 		  for(long p = 0; p < PMh; ++p)
 		  {
 			  double * path0 = m_paths + 2 * p * L;
@@ -130,7 +132,11 @@ namespace SiriusFM
 				  double sigma0 = a_diff->sigma(Sp0, y); //apply chages to
 				  double sigma1 = a_diff->sigma(Sp1, y); //all diffusions!
 
-				  double Z = N01(U);
+          // RNG is stateful, must be guarded against concurrent access:
+          double Z = 0.0;
+          #pragma omp critical
+          { Z = N01(U); }
+
 				  double Sn0 = 0;
 				  double Sn1 = 0;
 				  if(l == L-1)

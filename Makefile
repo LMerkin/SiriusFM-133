@@ -1,23 +1,22 @@
 #If some problems with Makefile are occured, consider running with
 #g++ -Wall -g -std=c++17 Test2.cpp IRProvider.cpp -o a && ./a [args]
 
-TARGET  = ../Test4
+CXX     = g++
+#CXXFLAGS += -fopenmp
+#EXTLIBS = -lgomp
 
-SOURCES = Test4 IRProviderConst 
+TARGET  = ../Test5
+SOURCES = Test5 IRProviderConst 
 
-EXTLIBS =
+#CXX      = nvc++
+#CXXFLAGS  += -acc=gpu # -Minfo messages
+#EXTLIBS = -lacchost
 
-CXXFLAGS += -MP -MMD -fPIC
-CXXFLAGS += -std=c++17 -Wall
-CXXFLAGS += -O3 -DNDEBUG -march=native -mtune=native
+CXXFLAGS  += -std=c++17 -Wall
+#CXXFLAGS += -MP -MMD -fPIC
+#CXXFLAGS += -O3 -DNDEBUG -march=native -mtune=native
+CXXFLAGS  += -O3 -DNDEBUG -march=native
 #CXXFLAGS += -O0 -g
-
-#LDFLAGS += -v
-#LDFLAGS += -fPIC
-#LDFLAGS += -pthread
-#LDFLAGS += -Wl,--as-needed
-#LDFLAGS += -Wl,--no-undefined
-
 
 BUILD_DIR = $(shell pwd)
 OBJECTS_DIR = $(BUILD_DIR)/../obj
@@ -37,7 +36,7 @@ $(OBJECTS_DIR)/%.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $(realpath $<)
 
 $(TARGET) : $(OBJECTS_DIR) $(OBJECTS)
-	$(CXX) $(LDFLAGS) -o $(TARGET) $(OBJECTS) # '-Wl,-(' $(EXTLIBS)
+	$(CXX) -o $(TARGET) $(OBJECTS) $(EXTLIBS)
 
 clean:
 	$(shell rm -fr $(OBJECTS_DIR))

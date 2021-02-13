@@ -10,12 +10,12 @@ namespace SiriusFM
 {
 	IRProvider<IRModeE::Const>::IRProvider(const char* a_file)
 	{
+		for(int k = 0; k < int(CcyE::N); ++k)
+			m_IRs[k] = 0;
+/*
 		FILE* src = fopen(a_file, "r");
 		char buf[BUF_SIZE];
 		char ccy[CCY_SIZE+1];
-
-		for(int k = 0; k < int(CcyE::N); ++k)
-			m_IRs[k] = 0;
 
 		if(a_file == nullptr) //check if a_file empty
 			return;
@@ -28,6 +28,6 @@ namespace SiriusFM
 			fgets(buf, BUF_SIZE, src);
 			m_IRs[int(Str2CcyE(ccy))] = strtod(buf+2, nullptr);//consider buf+1
 		}
-
+*/
 	}
 }
