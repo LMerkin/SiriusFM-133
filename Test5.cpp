@@ -55,8 +55,8 @@ int main(int argc, char** argv)
   GridNOP1D_S3_RKC1<decltype(diff), IRPConst, IRPConst, CcyE, CcyE>
     grid(ratesFile, ratesFile);
 
-  // Presto! Run Backward Induction on the Grid (with default BFactor):
-  grid.RunBI(opt, &diff, S0, t0, NS, tauMins);
+  // Presto! Run Bwd Induction on the Grid (with default BFactor):
+  grid.Run<false>(opt, &diff, S0, t0, NS, tauMins);
 
   // Get the (px, delta, gamma) at t0:
   auto   res   = grid.GetPxDeltaGamma0();

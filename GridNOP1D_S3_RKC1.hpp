@@ -14,16 +14,17 @@
 namespace SiriusFM
 {
   //==========================================================================//
-  // "RunBI":                                                                 //
+  // "Run":                                                                   //
   //==========================================================================//
   template
   <
     typename Diffusion1D, typename AProvider, typename BProvider,
     typename AssetClassA, typename AssetClassB
   >
+  template<bool IsFwd>
   void GridNOP1D_S3_RKC1<Diffusion1D, AProvider, BProvider,
                          AssetClassA, AssetClassB>::
-  RunBI
+  Run
   (
     // Option and Pricing Params:
     Option<AssetClassA, AssetClassB> const* a_option,   // Option Spec
@@ -39,14 +40,18 @@ namespace SiriusFM
     //------------------------------------------------------------------------//
     // Construct the Grid:                                                    //
     //------------------------------------------------------------------------//
-    assert(a_option  != nullptr && a_diff != nullptr && a_tauMins > 0 &&
-           a_Nints > 0  && a_BFactor >  0);
-std::cerr << "IsAmerican=" << a_option->m_isAmerican << std::endl;
+    assert(a_option != nullptr && a_diff != nullptr && a_tauMins > 0 &&
+           a_Nints > 0 && a_BFactor > 0);
+    // As this is a Non-IR process, S0 must be positive:
+    assert(a_S0 > 0);
+
     if (a_option->m_isAsian)
       throw std::invalid_argument("Asian options are not supported by 1D Grid");
 
-    // As this is a Non-IR process, S0 must be positive:
-    assert(a_S0 > 0);
+    if (IsFwd && a_option->m_isAmerican)
+      throw std::invalid_argument("American options not supported in Fwd");
+
+    m_isFwd = IsFwd;
 
     // Time to Option Expiration as Year Frac:
     double TTE = YearFracInt(a_option->m_expirTime - a_t0);
@@ -111,81 +116,118 @@ std::cerr << "IsAmerican=" << a_option->m_isAmerican << std::endl;
     if  (m_N > m_maxN)
       throw std::invalid_argument("Nints too large");
 
-      // NB: The Grid is stored by-column (S-contiguous) for better locality:
-    double* payOff = m_grid + (m_M-1)*m_N;
+    // NB: The Grid is stored by-column (S-contiguous) for better locality:
+    // Payoff is used in Bwd induction only:
+    //
+    double* payOff = !IsFwd ? (m_grid + (m_M-1)*m_N) : nullptr;
 
     for (int i = 0; i < m_N; ++i)
     {
       // S-line:
       m_S[i] = double(i) * h;  // Again, Low Bounds is 0
 
-      // Create the PayOff at t=T in the Grid. Emulate "1-element" path:
-      payOff[i] = a_option->Payoff(1, m_S + i, m_ts + (m_M-1));
+      // Initial cond for Bwd:
+      // Create the PayOff at t=T in the Grid. Emulate "1-element" path (Bwd):
+      if (!IsFwd)
+        payOff[i] = a_option->Payoff(1, m_S + i, m_ts + (m_M-1));
     }
-    // At Low Bound (a=0), we always have a constant boundary cond, continuous
-    // with payoff:
-    double fa = payOff[0];
+    // Initial cond for Fwd:
+    if (IsFwd)
+    {
+      // The initial cond is delta(S-S0):
+      for (int i = 0; i < m_N; ++i)
+        m_grid[i]  = 0;
+      m_grid[m_i0] = 1 / h;
+    }
+
+    // At Low Bound  (a=0), we always have a constant boundary cond, continuous
+    // with payoff,  or 0 in Fwd run:
+    double fa = IsFwd ? 0 : payOff[0];
 
     // At the Upper Bound, we use a const boundary cond if it is 0, otherwise
-    // we fix the df/dS (a Neumann-type cond):
-    bool   isNeumann = (payOff[m_N-1] != 0);
-    double UBC       = isNeumann ? (payOff[m_N-1] - payOff[m_N-2]) : 0;
+    // we fix the df/dS (a Neumann-type cond -- Bwd only):
+    bool   isNeumann = false;
+    double UBC       = 0.0;
+    if (!IsFwd)
+    {
+      isNeumann = (payOff[m_N-1] != 0);
+      UBC       = isNeumann ? (payOff[m_N-1] - payOff[m_N-2]) : 0;
+    }
+    // Low Bound: const in any case, in particular 0s for Fwd:
     for (int j = 0; j < m_M-1; ++j)
-      m_grid[j*m_N] = fa;  // Low Bound
+      m_grid[j*m_N] = fa;
 
     // Time Marshalling:
     double D2 = 2 * h * h;     // Denom in the Diffusive Term
 
-    for (int j = m_M-1; j >= 1; --j)
+    for (int      j = IsFwd ? 0 :  m_M-1;
+         IsFwd ? (j <= m_M-2)   : (j >= 1);
+         j +=  (IsFwd ? 1 : -1))
     {
       double const* fj   = m_grid + j * m_N;  // Prev time layer (j)
-      double*       fjm1 = const_cast<double*>(fj - m_N);
-                    // Curr time layer to be filled in (j-1)
+      double*       fj1 = const_cast<double*>(IsFwd ? (fj + m_N) : (fj - m_N));
+                    // Curr time layer to be filled in (j+-1)
 
       double tj      = m_ts[j];
       double rateAj  = m_irpA.r(a_option->m_assetA, tj);
       double rateBj  = m_irpB.r(a_option->m_assetB, tj);
-      double C1      = (rateBj - rateAj) / (2 * h); // Coeff in the Conv Term
+      double C1      = (rateBj - rateAj) / (2 * h);
+                       // Coeff in the Conv Term (Bwd only)
+      fj1[0]   = fa;   // Low Bound
 
-      fjm1[0]   = fa;   // Low Bound
-
-//#     pragma acc parallel loop copyin(fj[0:m_N],fjm1[0:m_N-1],tj,C1) copyout(fjm1[0:m_N-1])
+//#   pragma acc parallel loop copyin(fj[0:m_N],fj1[0:m_N-1],tj,C1) copyout(fj1[0:m_N-1])
 #     pragma omp parallel for
       for (int i = 1; i <= m_N-2; ++i)
       {
-        double Si    = m_S [i];
-        double fjim1 = fj[i-1];
-        double fji   = fj[i];
-        double fjip1 = fj[i+1];
+        double Si    = m_S[i];
+        double fjiM  = fj [i-1];
+        double fji   = fj [i];
+        double fjiP  = fj [i+1];
         double sigma = a_diff->sigma(Si, tj);
 
-        double DfDt  = rateBj  * fji              // Reactive Term
-                     - C1 * Si * (fjip1 - fjim1)  // Conv Term
-                     - sigma * sigma / D2 * (fjip1 - 2*fji + fjim1);
-        // FIXME: Euler's method instead of RKC1:
-        fjm1[i]      = fji - tau * DfDt;
-      }
-      fjm1[m_N-1] = isNeumann ? (fjm1[m_N-2] + UBC) : UBC;
+        double DfDt   = 0;
+        if (IsFwd)
+        {
+          // Fwd: Fokker-Planck:
+          double SiM    = m_S[i-1];
+          double SiP    = m_S[i+1];
+          double sigmaM = a_diff->sigma(SiM, tj);
+          double sigmaP = a_diff->sigma(SiP, tj);
 
-      // Grid allows us to price American options as well:
+          DfDt = - C1 * (SiP * fjiP - SiM * fjiM)
+                 + (sigmaP * sigmaP * fjiP - 2 * sigma * sigma * fji +
+                    sigmaM * sigmaM * fjiM) / D2;
+        }
+        else
+        {
+          // Bwd: BSM:
+          DfDt = rateBj  * fji            // Reactive Term
+               - C1 * Si * (fjiP - fjiM)  // Conv Term
+               - sigma * sigma / D2 * (fjiP - 2*fji + fjiM);
+        }
+        // FIXME: Euler's method instead of RKC1:
+        fj1[i] = fji - tau * DfDt;
+      }
+      fj1[m_N-1] = (!IsFwd && isNeumann) ? (fj1[m_N-2] + UBC) : UBC;
+
+      // Grid allows us to price American options as well (but only in Bwd):
       if (a_option->m_isAmerican)
+      {
+        assert(!IsFwd);
         for (int i = 0; i < m_N; ++i)
         {
           // Intrinsic value of the option is the payoff evaluated under the
           // curr underlying px Si:
           double  intrVal = a_option->Payoff(1, m_S + i, &tj);
-/*
-if (intrVal > fjm1[i])
-  std::cerr << "t=" << tj << ", S=" << m_S[i] << ": IntrVal=" << intrVal << ", OptPx=" << fjm1[i] << std::endl;
-*/
-          fjm1[i] = std::max<double>(fjm1[i],  intrVal);
+          fj1[i] = std::max<double>(fj1[i], intrVal);
         }
+      }
     }
     // End of Time Marshalling
   }
 
   //==========================================================================//
-  // "GetPriceDeltaGamma0": Assume S0 is on the Grid:                         //
+  // "GetPriceDeltaGamma0": Assume S0 is on the Grid (Bwd):                   //
   //==========================================================================//
   template
   <
@@ -220,4 +262,6 @@ if (intrVal > fjm1[i])
     }
     return std::make_tuple(px, delta, gamma);
   }
+
+  //==========================================================================//
 }

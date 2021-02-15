@@ -41,6 +41,7 @@ namespace SiriusFM
     int           m_N;        // Actual #of S pts
     int           m_i0;       // S[i0] = S0
     int           m_M;        // ACtual #of t pts
+    bool          m_isFwd;    // Last run was Fwd?
 
   public:
     //------------------------------------------------------------------------//
@@ -53,18 +54,19 @@ namespace SiriusFM
       long a_maxN = 2048,
       long a_maxM = 210384
     )
-    : m_irpA(a_ratesFileA),
-      m_irpB(a_ratesFileB),
-      m_maxN(a_maxN),
-      m_maxM(a_maxM),
-      m_grid(new double[m_maxN * m_maxM]),
-      m_S   (new double[m_maxN]),
-      m_ts  (new double[m_maxM]),
-      m_ES  (new double[m_maxM]),
-      m_VarS(new double[m_maxM]),
-      m_N   (0),
-      m_i0  (0),
-      m_M   (0)
+    : m_irpA  (a_ratesFileA),
+      m_irpB  (a_ratesFileB),
+      m_maxN  (a_maxN),
+      m_maxM  (a_maxM),
+      m_grid  (new double[m_maxN * m_maxM]),
+      m_S     (new double[m_maxN]),
+      m_ts    (new double[m_maxM]),
+      m_ES    (new double[m_maxM]),
+      m_VarS  (new double[m_maxM]),
+      m_N     (0),
+      m_i0    (0),
+      m_M     (0),
+      m_isFwd (false)
     {
       // Zero-out all arrays:
       memset(m_grid, 0, m_maxN * m_maxM * sizeof(double));
@@ -89,11 +91,13 @@ namespace SiriusFM
     }
 
     //------------------------------------------------------------------------//
-    // "RunBI": Performs Backward-Induction:                                  //
+    // "Run": Performs Backward or Forward Induction:                         //
     //------------------------------------------------------------------------//
-    void RunBI
+    template<bool IsFwd>
+    void Run
     (
-      Option<AssetClassA, AssetClassB> const* a_option,   // Option Spec
+      Option<AssetClassA, AssetClassB> const*
+                          a_option,         // Option Spec
       Diffusion1D const*  a_diff,
       // Grid Params:
       double              a_S0,             // S(t0); may differ from Diffusion
