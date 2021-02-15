@@ -6,30 +6,31 @@
 namespace SiriusFM
 {
   //=========================================================================//
-  // Generic European Call:                                                  //
+  // Generic European or American (but not Asian) Call:                      //
   //=========================================================================//
   template<typename AssetClassA,  typename AssetClassB>
-	class EurCallOption final: public Option<AssetClassA, AssetClassB>
+	class CallOption final: public Option<AssetClassA, AssetClassB>
 	{
 		double const m_K;
 	public:
-		EurCallOption
+		CallOption
     (
       AssetClassA a_assetA,
       AssetClassB a_assetB,
       double      a_K,
-      time_t      a_expirTime
+      time_t      a_expirTime,
+      bool        a_isAmerican
     )
     : Option<AssetClassA, AssetClassB>
-            (a_assetA, a_assetB, a_expirTime, false, false),
-            // IsAmerican=IsAsian=false
+            (a_assetA, a_assetB, a_expirTime, a_isAmerican, false),
+            // IsAsian=false
 	    m_K(a_K)
 		{
 			if(a_K <= 0)
 				throw std::invalid_argument("Bad K");
 		}
 
-		~EurCallOption() override {}
+		~CallOption() override {}
 
 		virtual double Payoff(long a_L, 
 							  double const*  a_path,
@@ -41,31 +42,32 @@ namespace SiriusFM
 	};
 
   //=========================================================================//
-  // Generic European Put:                                                   //
+  // Generic European or American (but not Asian) Put:                       //
   //=========================================================================//
   template<typename  AssetClassA,  typename AssetClassB>
-	class EurPutOption final: public Option<AssetClassA, AssetClassB>
+	class PutOption final: public Option<AssetClassA, AssetClassB>
 	{
 		double const m_K;
 
 	public:
-		EurPutOption
+		PutOption
     (
       AssetClassA a_assetA,
       AssetClassB a_assetB,
       double      a_K,
-      time_t      a_expirTime
+      time_t      a_expirTime,
+      bool        a_isAmerican
     )
     : Option<AssetClassA, AssetClassB>
-            (a_assetA, a_assetB, a_expirTime, false, false),
-            // IsAmerican=IsAsian=false
+            (a_assetA, a_assetB, a_expirTime, a_isAmerican, false),
+            // IsAsian=false
 	    m_K(a_K)
 		{
 			if(a_K <= 0)
 				throw std::invalid_argument("Bad K");
 		}
 
-		~EurPutOption() override {}
+		~PutOption() override {}
 
 		virtual double Payoff(long a_L, 
 							  double const*  a_path,
@@ -79,6 +81,6 @@ namespace SiriusFM
   //=========================================================================//
   // Aliases:                                                                //
   //=========================================================================//
-  using EurCallOptionFX = EurCallOption<CcyE, CcyE>;
-  using EurPutOptionFX  = EurPutOption <CcyE, CcyE>;
+  using CallOptionFX = CallOption<CcyE, CcyE>;
+  using PutOptionFX  = PutOption <CcyE, CcyE>;
 }

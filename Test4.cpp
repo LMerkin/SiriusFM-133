@@ -83,15 +83,17 @@ int main(int argc, char** argv)
 
   if (strcmp(OptType, "Call") == 0)
   {
-		opt       = new EurCallOptionFX(ccyA, ccyB, K, T);
-    C0        = BSMPxCall(S0, K, TTE, rateA, rateB, sigma);
+		opt       = new CallOptionFX(ccyA, ccyB, K, T);
+    C0        = BSMPxCall(S0, K, TTE, rateA, rateB, sigma, false);
+                // !IsAmerican
     deltaFunc = &deltaCall;
   }
   else
 	if (strcmp(OptType, "Put") == 0)
   {
-	  opt       = new EurPutOptionFX (ccyA, ccyB, K, T);
-    C0        = BSMPxPut(S0, K, TTE, rateA, rateB, sigma);
+	  opt       = new PutOptionFX (ccyA, ccyB, K, T);
+    C0        = BSMPxPut(S0, K, TTE, rateA, rateB, sigma, false);
+                // !IsAmerican
     deltaFunc = &deltaPut;
   }
   else

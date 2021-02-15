@@ -93,10 +93,12 @@ int main(int argc, char** argv)
     mce(20000, 20000);
 
 	OptionFX const* opt = (strcmp(OptType, "Call") == 0)
-						? static_cast<OptionFX*>(new EurCallOptionFX(ccyA, ccyB, K, T_days))
+						? static_cast<OptionFX*>
+              (new CallOptionFX(ccyA, ccyB, K, T_days, false)) // !IsAmerican
 						: 
 						(strcmp(OptType, "Put") == 0)
-						? static_cast<OptionFX*> (new EurPutOptionFX(ccyA, ccyB, K, T_days))
+						? static_cast<OptionFX*>
+              (new PutOptionFX (ccyA, ccyB, K, T_days, false)) // !IsAmerican
 						:throw invalid_argument("Bad option type");
 
 	time_t t0 = time(nullptr);

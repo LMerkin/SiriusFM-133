@@ -41,6 +41,7 @@ namespace SiriusFM
     //------------------------------------------------------------------------//
     assert(a_option  != nullptr && a_diff != nullptr && a_tauMins > 0 &&
            a_Nints > 0  && a_BFactor >  0);
+std::cerr << "IsAmerican=" << a_option->m_isAmerican << std::endl;
     if (a_option->m_isAsian)
       throw std::invalid_argument("Asian options are not supported by 1D Grid");
 
@@ -148,8 +149,8 @@ namespace SiriusFM
 
       fjm1[0]   = fa;   // Low Bound
 
-#     pragma acc parallel loop copyin(fj[0:m_N],fjm1[0:m_N-1],tj,C1) copyout(fjm1[0:m_N-1])
-//#   pragma omp parallel for
+//#     pragma acc parallel loop copyin(fj[0:m_N],fjm1[0:m_N-1],tj,C1) copyout(fjm1[0:m_N-1])
+#     pragma omp parallel for
       for (int i = 1; i <= m_N-2; ++i)
       {
         double Si    = m_S [i];
@@ -165,6 +166,20 @@ namespace SiriusFM
         fjm1[i]      = fji - tau * DfDt;
       }
       fjm1[m_N-1] = isNeumann ? (fjm1[m_N-2] + UBC) : UBC;
+
+      // Grid allows us to price American options as well:
+      if (a_option->m_isAmerican)
+        for (int i = 0; i < m_N; ++i)
+        {
+          // Intrinsic value of the option is the payoff evaluated under the
+          // curr underlying px Si:
+          double  intrVal = a_option->Payoff(1, m_S + i, &tj);
+/*
+if (intrVal > fjm1[i])
+  std::cerr << "t=" << tj << ", S=" << m_S[i] << ": IntrVal=" << intrVal << ", OptPx=" << fjm1[i] << std::endl;
+*/
+          fjm1[i] = std::max<double>(fjm1[i],  intrVal);
+        }
     }
     // End of Time Marshalling
   }

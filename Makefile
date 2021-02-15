@@ -4,15 +4,15 @@
 TARGET  = ../Test5
 SOURCES = Test5 IRProviderConst 
 
-#CXX     = g++
-#CXXFLAGS += -fopenmp
-#EXTLIBS = -lgomp
+CXX     = g++
+CXXFLAGS += -fopenmp
+EXTLIBS = -lgomp
 
-CXX      = nvc++
-CXXFLAGS += -acc=gpu # -Minfo messages
-EXTLIBS = -lacchost
+#CXX      = nvc++
+#CXXFLAGS += -acc=gpu # -Minfo messages
+#EXTLIBS = -lacchost
 
-CXXFLAGS  += -std=c++17 -Wall
+CXXFLAGS  += -std=c++17 -Wall -Wno-stringop-truncation
 CXXFLAGS  += -O3 -DNDEBUG -march=native
 #CXXFLAGS += -O0 -g
 
