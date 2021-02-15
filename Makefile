@@ -1,20 +1,18 @@
 #If some problems with Makefile are occured, consider running with
 #g++ -Wall -g -std=c++17 Test2.cpp IRProvider.cpp -o a && ./a [args]
 
-CXX     = g++
-#CXXFLAGS += -fopenmp
-#EXTLIBS = -lgomp
-
 TARGET  = ../Test5
 SOURCES = Test5 IRProviderConst 
 
-#CXX      = nvc++
-#CXXFLAGS  += -acc=gpu # -Minfo messages
-#EXTLIBS = -lacchost
+#CXX     = g++
+#CXXFLAGS += -fopenmp
+#EXTLIBS = -lgomp
+
+CXX      = nvc++
+CXXFLAGS += -acc=gpu # -Minfo messages
+EXTLIBS = -lacchost
 
 CXXFLAGS  += -std=c++17 -Wall
-#CXXFLAGS += -MP -MMD -fPIC
-#CXXFLAGS += -O3 -DNDEBUG -march=native -mtune=native
 CXXFLAGS  += -O3 -DNDEBUG -march=native
 #CXXFLAGS += -O0 -g
 

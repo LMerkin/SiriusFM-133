@@ -20,8 +20,9 @@ namespace SiriusFM
       double      a_K,
       time_t      a_expirTime
     )
-    : Option<AssetClassA, AssetClassB>(a_assetA, a_assetB, a_expirTime, false),
-                                                // IsAmerican=false
+    : Option<AssetClassA, AssetClassB>
+            (a_assetA, a_assetB, a_expirTime, false, false),
+            // IsAmerican=IsAsian=false
 	    m_K(a_K)
 		{
 			if(a_K <= 0)
@@ -55,8 +56,9 @@ namespace SiriusFM
       double      a_K,
       time_t      a_expirTime
     )
-    : Option<AssetClassA, AssetClassB>(a_assetA, a_assetB, a_expirTime, false),
-                                                          // IsAmerican=false
+    : Option<AssetClassA, AssetClassB>
+            (a_assetA, a_assetB, a_expirTime, false, false),
+            // IsAmerican=IsAsian=false
 	    m_K(a_K)
 		{
 			if(a_K <= 0)

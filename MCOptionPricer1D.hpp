@@ -27,6 +27,9 @@ namespace SiriusFM
   {
     assert(a_option != nullptr && a_tauMins > 0 && a_P > 0);
 
+    if (a_option->m_isAmerican)
+      throw std::invalid_argument("MC cannot price American options");
+
     // Path Evaluator:
     OPPathEval pathEval(a_option);
 

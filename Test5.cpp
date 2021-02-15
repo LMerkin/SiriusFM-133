@@ -56,6 +56,13 @@ int main(int argc, char** argv)
   // Presto! Run Backward Induction on the Grid (with default BFactor):
   grid.RunBI(opt, &diff, S0, t0, NS, tauMins);
 
+  // Get the (px, delta, gamma) at t0:
+  auto   res   = grid.GetPxDeltaGamma0();
+  double px    = get<0>(res);
+  double delta = get<1>(res);
+  double gamma = get<2>(res);
+  cout << "Px=" << px << ", Delta=" << delta << ", Gamma=" << gamma << endl;
+
   delete opt;
 	return 0;
 }

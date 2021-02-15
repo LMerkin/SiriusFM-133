@@ -38,6 +38,9 @@ namespace SiriusFM
     double* const m_ts;       // TimeLine
     double* const m_ES;       // E  [S](t)
     double* const m_VarS;     // Var[S](t)  (estimated)
+    int           m_N;        // Actual #of S pts
+    int           m_i0;       // S[i0] = S0
+    int           m_M;        // ACtual #of t pts
 
   public:
     //------------------------------------------------------------------------//
@@ -58,8 +61,18 @@ namespace SiriusFM
       m_S   (new double[m_maxN]),
       m_ts  (new double[m_maxM]),
       m_ES  (new double[m_maxM]),
-      m_VarS(new double[m_maxM])
-    {}
+      m_VarS(new double[m_maxM]),
+      m_N   (0),
+      m_i0  (0),
+      m_M   (0)
+    {
+      // Zero-out all arrays:
+      memset(m_grid, 0, m_maxN * m_maxM * sizeof(double));
+      memset(m_S,    0, m_maxN          * sizeof(double));
+      memset(m_ts,   0, m_maxM          * sizeof(double));
+      memset(m_ts,   0, m_maxM          * sizeof(double));
+      memset(m_VarS, 0, m_maxM          * sizeof(double));
+    }
 
     ~GridNOP1D_S3_RKC1()
     {
@@ -85,9 +98,14 @@ namespace SiriusFM
       // Grid Params:
       double              a_S0,             // S(t0); may differ from Diffusion
       time_t              a_t0,             // Abs Pricing Time
-      long                a_N       = 500,  // #S points
+      long                a_Nints   = 500,  // #S intervals
       int                 a_tauMins = 30,   // TimeStep in minutes
       double              a_BFactor = 4.5   // #StdDevs for Upper Boundary
     );
+
+    //------------------------------------------------------------------------//
+    // "GetPxDeltaGamma0": Px, Delta and Gamma at t=0:                        //
+    //------------------------------------------------------------------------//
+    std::tuple<double, double, double> GetPxDeltaGamma0() const;
   };
 }
